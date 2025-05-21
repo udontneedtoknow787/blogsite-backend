@@ -12,17 +12,17 @@ NOTE:  This repo only have backend code, if you want to know about frontend feat
 
 ## Main features
 
-- Robust and secure application with **proper routing for User, Blogs as well as HealthCheck route** for monitoring application status.
+- Robust and secure application with **`Email verification` via OTP, proper routing for User, Blogs as well as HealthCheck route** for monitoring application status.
 
-- **Proper security** to *protected routes* with **JWT** authentication, sent through **cookies**.
+- **Proper security** to *protected routes* with **`JWT authentication`**, sent through **cookies**.
 
-- Schema validation with **ZOD**.
+- `Schema validation` with **ZOD**.
 
 - Allows cross origin resource sharing with **CORS** library.
 
-- **Protect User's privacy** by providing **public and private profile** view.
+- **Protect User's `privacy`** by providing **public and private profile** view.
 
-- Uers credential/password is always stored in encrypted state with **bcrypt**, providing better security.
+- Uers credential/password is always stored in encrypted state with **bcrypt**, providing `better security`.
 
 
 ### Other features
@@ -37,6 +37,7 @@ NOTE:  This repo only have backend code, if you want to know about frontend feat
 
 - Express Js
 - MongoDB & mongoose
+- nodemailer
 - ZOD
 - bcrypt
 - CORS
