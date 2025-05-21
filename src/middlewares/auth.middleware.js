@@ -5,17 +5,20 @@ import { ApiError } from "../utils/apiError.js";
 
 export const authMiddleware = AsyncHandler(async (req, res, next)=> {
     try {
-        console.log(req.cookies.accessToken)
+        // console.log("Request cookie : ",req.cookies.accessToken)
+        console.log("Request cookie : its classiffied!")
         const token = req.cookies?.accessToken || req.headers["authorization"]?.replace("Bearer ", "") // figure out this portion
         if(!token){
             throw new ApiError(405, "Unauthorized request!")
         }
-        const decodedToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
         const user = await User.findById(decodedToken?._id).select("-password")
         if(!user){
             throw new ApiError(405, "Invalid access token!")
         }
-
+        if(user.verified === false){
+            throw new ApiError(405, "User not verified!")
+        }
         req.user = user
         next()
     } catch (error) {

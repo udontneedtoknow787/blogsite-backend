@@ -44,10 +44,14 @@ const postBlog = AsyncHandler(async(req, res) => {
         throw new ApiError(405, "Unable to create blog!")
     }
     await saveBlog(createdBlog._id, userId)
+
+    // After saving blog, also return updated user blogs list
+    const updatedUser = await User.findById(userId)
+    // const updatedBlogsList = await User.findById(userId).populate("blogs")
     
     return res
     .status(201)
-    .json(new ApiResponse(201, createdBlog, "Blog created successfully!"))
+    .json(new ApiResponse(201, {user: updatedUser, blog: createdBlog}, "Blog created successfully!"))
 
 })
 

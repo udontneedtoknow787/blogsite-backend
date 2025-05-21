@@ -5,6 +5,9 @@ import { ApiError } from "../utils/apiError.js"
 import { AsyncHandler } from "../utils/asyncHandler.js"
 import jwt from "jsonwebtoken"
 import mongoose from "mongoose";
+import OTP_Generator from "../utils/otp-generator.js";
+import SendOtp from "../utils/otp-sender.js";
+import bcrypt from "bcrypt";
 
 const cookieOptions = {
     httpOnly: true,
@@ -41,20 +44,38 @@ const registerUser = AsyncHandler( async (req, res) => {
         throw new ApiError(400, `All fields are required.\n *Password must be between 6 and 20 length.
     Fullname should be from 2 to 50 length only.`);
     }
-    const existedUser = await User.findOne({
-        $or: [{ username }, { email }]
-    });
-    if(existedUser) {
-        throw new ApiError(400, "Username or email already registered.");
+    // Username and email should be unique
+    const existingUser = await User.findOne({username});
+    if(existingUser && existingUser.isVerified){
+        throw new ApiError(400, "Username already taken.");
     }
-    const newUser = await User.create({ username, email, password, fullname });
+    if(existingUser && existingUser.email === email){
+        const otp = OTP_Generator(6);
+        const hashedOtp = bcrypt.hashSync(otp, 10);
+        existingUser.verificationCode = hashedOtp;
+        existingUser.verificationCodeExpiry = Date.now() + 600000;
+        await existingUser.save();
+        SendOtp(email, otp, "Your account is requested for reverification. Please verify your email via OTP sent to this email address.");
+        return res.status(200).json(new ApiResponse(200, {_id: existingUser._id, username: existingUser.username}, "User already exists. Please verify your email via OTP sent to this email address."));
+    }
+    const existingEmail = await User.findOne({email});
+    if(existingEmail && existingEmail.isVerified) throw new ApiError(400, "Email already taken.");
+    if(existingEmail && existingUser) throw new ApiError(400, "Plese use diffrent username.");
+    // OTP verification step
+    const otp = OTP_Generator(6);
+    const hashedOtp = bcrypt.hashSync(otp, 10);
+    // sending OTP to email
+    SendOtp(email, otp);
+    // verifying OTP
+    // if verified, then create user
+    const newUser = await User.create({ username, email, password, fullname, verificationCode: hashedOtp, verified: false, verificationCodeExpiry: Date.now() + 10 * 60 * 1000 });
     const createdUser = await User.findOne({
         _id: newUser._id
     }).select("-password");
     if(!createdUser) {
         throw new ApiError(500, "Failed to create user.");
     }
-    return res.status(201).json(new ApiResponse(201, createdUser, "User registered successfully."));
+    return res.status(201).json(new ApiResponse(201, createdUser, "User created successfully! Please verify your email via OTP sent to this email address."));
 })
 
 

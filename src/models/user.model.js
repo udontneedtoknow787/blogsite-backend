@@ -21,6 +21,21 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
+    verified: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    verificationCode: {
+        type: String,
+        required: false,
+        default: null
+    },
+    verificationCodeExpiry: {
+        type: Date,
+        required: false,
+        default: null
+    },
     blogs: {
         type: [{
             type: Schema.Types.ObjectId,
