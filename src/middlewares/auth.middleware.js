@@ -9,7 +9,7 @@ export const authMiddleware = AsyncHandler(async (req, res, next)=> {
         console.log("Request cookie : its classiffied!")
         const token = req.cookies?.accessToken || req.headers["authorization"]?.replace("Bearer ", "") // figure out this portion
         if(!token){
-            throw new ApiError(405, "Unauthorized request!")
+            throw new ApiError(405, "Unauthorized request!\n Your login token might be expired.")
         }
         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
         const user = await User.findById(decodedToken?._id).select("-password")

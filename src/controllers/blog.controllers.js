@@ -29,7 +29,7 @@ const postBlog = AsyncHandler(async(req, res) => {
         throw new ApiError(403, "No registred user")
     }
     const {title, content } = req.body
-    const isValid = blogSchema.safeParse({title, content, authorname: req.user.fullname})
+    const isValid = blogSchema.safeParse({title, content, authorname: req.user.username})
     if(!isValid.success){
         throw new ApiError(405, "All fields are required.\n*Max 1000 length content is allowed.")
     }
@@ -37,7 +37,7 @@ const postBlog = AsyncHandler(async(req, res) => {
         title,
         content,
         author: userId,
-        authorname: req.user.fullname
+        authorname: req.user.username
     })
     const createdBlog = await Blog.findById(blog?._id)
     if(!createdBlog){
