@@ -9,11 +9,10 @@ dotenv.config();
 
 // CORS error preventing middleware
 app.use(cors({ 
-  // origin: process.env.FRONTEND_URL || "*", // Allow frontend originx
-  origin: "*",
+  origin: process.env.FRONTEND_URL || "*", // Allow frontend originx
   methods: "GET, POST, PUT, DELETE, OPTIONS",
   allowedHeaders: "Content-Type, Authorization",
-  // credentials: process.env.FRONTEND_URL ? true: false,
+  credentials: true,
 }));
 
 // Handle preflight requests
