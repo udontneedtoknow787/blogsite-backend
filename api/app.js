@@ -29,6 +29,16 @@ app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 app.use(express.static("public"))
 
+// oldest trick in the book
+app.get("/", (req, res) => {
+    return res.status(200).json({ message: "Welcome to the Homepage" })
+})
+app.get("/api", (req, res) => {
+    return res.status(200).json({ message: "Welcome to the API" })
+})
+app.get("/api/v2", (req, res) => {
+    return res.status(200).json({ message: "Welcome to the API/v2" })
+})
 
 // import routes
 import HealthCheckRoute from "./routes/healthcheck.route.js"
@@ -40,17 +50,6 @@ import {errorHandler} from "./middlewares/errorHandling.middleware.js"
 app.use("/api/v1/healthcheck", HealthCheckRoute)
 app.use("/api/v1/users", UserRoute)
 app.use("/api/v1/blogs", BlogRoute)
-
-// oldest trick in the book
-app.get("/", (req, res) => {
-    return res.status(200).json({ message: "Welcome to the Homepage" })
-})
-app.get("/api", (req, res) => {
-    return res.status(200).json({ message: "Welcome to the API" })
-})
-app.get("api/v1", (req, res) => {
-    return res.status(200).json({ message: "Welcome to the API/v1" })
-})
 
 app.use(errorHandler)
 
