@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { postBlog, getBlogs, getBlogsById } from "../controllers/blog.controllers.js";
+import { postBlog, getBlogs, getBlogsById, deleteBlogById } from "../controllers/blog.controllers.js";
 import { authMiddleware } from "../middlewares/auth.middleware.js";
 
 const router = Router()
@@ -10,5 +10,6 @@ router.route("/").get(getBlogsById)
 
 // protected routes
 router.route("/post-blog").post(authMiddleware, postBlog)
+router.route("/delete-blog").delete(authMiddleware, deleteBlogById)
 
 export default router

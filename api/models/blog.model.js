@@ -16,7 +16,11 @@ const blogSchema =  new Schema({
     content: {
         type: String,
         required: true
-    }
+    },
+    visible: {
+        type: Boolean,
+        default: true
+    },
 }, {timestamps: true})
 
 export const Blog = mongoose.model('Blog', blogSchema);

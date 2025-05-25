@@ -57,19 +57,21 @@ const postBlog = AsyncHandler(async(req, res) => {
 
 const searchSchema = z.object({
     page: z.number().int().positive(),
-    sortType: z.enum(["-1", "1"]),
-    limit: z.number().default(process.env.DEFAULT_LIMIT)
+    sortType: z.union([z.literal(1), z.literal(-1)]).default(-1),
+    limit: z.number().default(process.env.DEFAULT_PAGE_LIMIT ? parseInt(process.env.DEFAULT_LIMIT) : 10)
 })
 
 const getBlogs = AsyncHandler(async(req, res) => {
-    let {page=1, limit=10, sortType=-1} = req.body
+    // console.log("Request body:", req.body)
+    let {page, limit, sortType} = req.body
     const isValid = searchSchema.safeParse({page, limit, sortType})
+    // console.log("Validation result:", isValid)
     if(!isValid.success){
         page=1; limit=10; sortType=-1
     }
-
+    // console.log("Page:", page, "Limit:", limit, "Sort Type:", sortType)
     const blogs = await Blog
-    .find()
+    .find({visible: true})
     .sort({"createdAt": sortType} || "-createdAt")
     .skip((page-1)*limit)
     .limit(limit)
@@ -90,15 +92,42 @@ const getBlogsById = AsyncHandler(async (req, res) => {
     if(!mongoose.Types.ObjectId.isValid(blogId)){
         throw new ApiError(400, "Invalid blogId!")
     }
-    const blog = await Blog.findById(blogId)
+    const blog = await Blog.findById({_id: blogId, visible: true});
     if(!blog){
         throw new ApiError(404, "Blog not found!")
     }
     return res.status(200).json(new ApiResponse(200, blog, "Blog fetched successfully!"))
 })
 
+const deleteBlogById = AsyncHandler(async (req, res) => {
+    const {blogId} = req.query
+    if(!blogId){
+        throw new ApiError(400, "No blogId provided!")
+    }
+    if(!mongoose.Types.ObjectId.isValid(blogId)){
+        throw new ApiError(400, "Invalid blogId!")
+    }
+    const blog = await Blog.findByIdAndUpdate({_id: blogId, visible: true});
+    if(!blog){
+        throw new ApiError(404, "Blog not found or already deleted!")
+    }
+    if(blog.authorname.toString() !== req.user.username.toString()){
+        console.log("Blog author:", blog.authorname, "Delete Request user:", req.user.username)
+        throw new ApiError(403, "You are not authorized to delete this blog!")
+    }
+    blog.visible = false;
+    await blog.save({validateBeforeSave: false})
+    // Also remove the blog from user's blogs list
+    const user = await User.findById(req.user._id);
+    user.blogs = user.blogs.filter(b => b.toString() !== blogId.toString());
+    await user.save({validateBeforeSave: false})
+
+    return res.status(200).json(new ApiResponse(200, {updatedBlogs: user.blogs}, "Blog deleted successfully!"))
+})
+
 export {
     postBlog,
     getBlogs,
-    getBlogsById
+    getBlogsById,
+    deleteBlogById
 }

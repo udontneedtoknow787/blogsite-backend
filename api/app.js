@@ -6,6 +6,12 @@ import dotenv from "dotenv";
 const app = express()
 dotenv.config();
 
+app.use((req, res, next) => {
+  // Log the request method, URL, and IP address
+  const ip = req.headers['x-forwarded-for'] || req.ip;
+  console.log(`${req.method} request for '${req.url}' from IP: ${ip}`);
+  next(); // Call the next middleware or route handler
+});
 
 // CORS error preventing middleware
 app.use(cors({ 
@@ -16,13 +22,13 @@ app.use(cors({
 }));
 
 // Handle preflight requests
-// app.options("*", (req, res) => {
-//   res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
-//   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-//   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-//   res.header("Access-Control-Allow-Credentials", "true");
-//   res.sendStatus(204);
-// });
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.sendStatus(204);
+});
 // general middlewares
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))

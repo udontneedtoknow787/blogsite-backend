@@ -128,7 +128,7 @@ const userLogout = AsyncHandler(async (_, res) => {
 })
 
 const publicProfile = AsyncHandler(async (req, res) => {
-    console.log(req.params)
+    console.log("Profile searched of ", req.params)
     const username = req.params?.username
     if (!z.string().min(2).max(20).safeParse(username).success) {
         throw new ApiError(400, "Invalid username")
