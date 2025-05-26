@@ -8,8 +8,8 @@ import { User } from "../models/user.model.js";
 
 
 const saveBlog = async (blogId, userId) => {
-    const user = await User.findById(userId)
-    await user.blogs.push(blogId)
+    const user = await User.findById({_id: userId})
+    user.blogs.push(blogId)
     try {
         await user.save({validateBeforeSave: false})
     } catch (error) {

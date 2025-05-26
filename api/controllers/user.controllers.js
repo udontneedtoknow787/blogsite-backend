@@ -10,7 +10,7 @@ import SendOtp from "../utils/otp-sender.js";
 import bcrypt from "bcrypt";
 
 // for production
-const cookieOptions = {
+export const cookieOptions = {
     httpOnly: true,
     secure: true,     
     sameSite: 'None',
@@ -22,7 +22,7 @@ const cookieOptions = {
 //     secure: false
 // }
 
-const generateAccessToken = async (userId) => {
+export const generateAccessToken = async (userId) => {
     const user = await User.findById(userId)
     const accessToken = user.generateAccessToken()
 
@@ -54,28 +54,41 @@ const registerUser = AsyncHandler(async (req, res) => {
     }
     // Username and email should be unique
     const existingUser = await User.findOne({ username });
-    if (existingUser && existingUser.isVerified) {
-        throw new ApiError(400, "Username already taken.");
+    if (existingUser) {
+        if(existingUser.verified) throw new ApiError(400, "Username already taken.");
+        else if(existingUser.createdAt < new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)) {
+            // If the user is not verified and created more than 10 days ago, delete the old unverified user and assign
+            // that username to the new user
+            await User.deleteOne({ _id: existingUser._id });
+            console.log("Deleted old unverified user with username:", username);
+        }
     }
-    if (existingUser && existingUser.email === email) {
-        const otp = OTP_Generator(6);
-        const hashedOtp = bcrypt.hashSync(otp, 10);
-        existingUser.verificationCode = hashedOtp;
-        existingUser.verificationCodeExpiry = Date.now() + 600000;
-        await existingUser.save();
-        SendOtp(email, otp, "Your account is requested for reverification. Please verify your email via OTP sent to this email address.");
-        return res.status(200).json(new ApiResponse(200, { _id: existingUser._id, username: existingUser.username }, "User already exists. Please verify your email via OTP sent to this email address."));
-    }
+    // if (existingUser && existingUser.email === email) {
+    //     const otp = OTP_Generator(6);
+    //     const hashedOtp = bcrypt.hashSync(otp, 10);
+    //     existingUser.verificationCode = hashedOtp;
+    //     existingUser.verificationCodeExpiry = Date.now() + 600000;
+    //     await existingUser.save();
+    //     SendOtp(email, otp, "Your account is requested for reverification. Please verify your email via OTP sent to this email address.");
+    //     return res.status(200).json(new ApiResponse(200, { _id: existingUser._id, username: existingUser.username }, "User already exists. Please verify your email via OTP sent to this email address."));
+    // }
     const existingEmail = await User.findOne({ email });
-    if (existingEmail && existingEmail.isVerified) throw new ApiError(400, "Email already taken.");
-    if (existingEmail && existingUser) throw new ApiError(400, "Plese use diffrent username.");
+    if (existingEmail){
+        if(existingEmail.verified) throw new ApiError(400, "Email already registered.");
+        else if(existingEmail.createdAt < new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)) {
+            // If the user is not verified and created more than 10 days ago, delete the old unverified user and assign
+            // that email to the new user
+            await User.deleteOne({ _id: existingEmail._id });
+            console.log("Deleted old unverified user with email:", email);
+        }
+    }
     // OTP verification step
     const otp = OTP_Generator(6);
     const hashedOtp = bcrypt.hashSync(otp, 10);
     // sending OTP to email
-    SendOtp(email, otp);
-    // verifying OTP
-    // if verified, then create user
+    const info = await SendOtp(email, otp);
+    console.log("SendOtp function response: ", info);
+
     const newUser = await User.create({ username, email, password, fullname, verificationCode: hashedOtp, verified: false, verificationCodeExpiry: Date.now() + 10 * 60 * 1000 });
     const createdUser = await User.findOne({
         _id: newUser._id
@@ -141,9 +154,23 @@ const publicProfile = AsyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, user, "Profile fetched successfully!"))
 })
 
+const updateUserPassword = AsyncHandler(async (req, res) => {
+    const userId = req.user?._id
+    validateUserId(userId)
+    const { newPassword } = req.body
+    if (!newPassword || loginSchema.safeParse({ username: req.user.username, password: newPassword }).success === false) {
+        throw new ApiError(400, "All fields are required.")
+    }
+    const user = await User.findById(userId)
+    user.password = newPassword
+    await user.save()
+    return res.status(200).json(new ApiResponse(200, {}, "Password updated successfully!"))
+})
+
 export {
     registerUser,
     userLogin,
     userLogout,
-    publicProfile
+    publicProfile,
+    updateUserPassword
 }
