@@ -8,6 +8,7 @@ import { cookieOptions, generateAccessToken } from "./user.controllers.js";
 import { z } from "zod";
 import OTP_Generator from "../utils/otp-generator.js";
 import SendOtp from "../utils/otp-sender.js";
+import { sendSimpleMessage } from "../utils/mailgun.js";
 
 
 const VerifyUser = AsyncHandler(async (req, res) => {
@@ -65,6 +66,7 @@ const RequestOTP = AsyncHandler(async (req, res) => {
     // sending OTP to email
     const info = await SendOtp(email, otp);
     console.log("SendOtp function response: ", info);
+    await sendSimpleMessage( {otp, email, fullname:user.fullname, userId:user._id, message: "This is the second email!"} )
     user.verificationCode = hashedOtp;
     user.verificationCodeExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
     await user.save({ validateBeforeSave: false });
