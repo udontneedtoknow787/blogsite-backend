@@ -2,6 +2,7 @@ import express from "express"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 import dotenv from "dotenv";
+import logger from "./utils/logger.js";
 
 const app = express()
 dotenv.config();
@@ -9,7 +10,7 @@ dotenv.config();
 app.use((req, res, next) => {
   // Log the request method, URL, and IP address
   const ip = req.headers['x-forwarded-for'] || req.ip;
-  console.log(`${req.method} request for '${req.url}' from IP: ${ip}`);
+  logger.info(`${req.method} request for '${req.url}' from IP: ${ip}`);
   next(); // Call the next middleware or route handler
 });
 

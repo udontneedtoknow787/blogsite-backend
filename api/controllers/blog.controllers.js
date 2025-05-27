@@ -5,6 +5,7 @@ import { z } from "zod";
 import { AsyncHandler } from "../utils/asyncHandler.js";
 import { Blog } from "../models/blog.model.js";
 import { User } from "../models/user.model.js";
+import logger from "../utils/logger.js";
 
 
 const saveBlog = async (blogId, userId) => {
@@ -112,7 +113,7 @@ const deleteBlogById = AsyncHandler(async (req, res) => {
         throw new ApiError(404, "Blog not found or already deleted!")
     }
     if(blog.authorname.toString() !== req.user.username.toString()){
-        console.log("Blog author:", blog.authorname, "Delete Request user:", req.user.username)
+        logger.warn("Blog author:", blog.authorname, "Delete Request user:", req.user.username)
         throw new ApiError(403, "You are not authorized to delete this blog!")
     }
     blog.visible = false;

@@ -1,13 +1,8 @@
 import nodemailer from 'nodemailer';
 import { ApiError } from './apiError.js';
+import logger from './logger.js';
 
-export default async function SendOtp(email, otp, message = "") {
-    console.log("SendOtp called");
-    console.log("Host:", process.env.EMAIL_HOST);
-    console.log("Port:", process.env.EMAIL_PORT);
-    console.log("User:", process.env.EMAIL_USER);
-    console.log("Email:", email);
-    
+export default async function SendOtp(email, otp, message = "") {    
     try {
         var transporter = nodemailer.createTransport({
             host: process.env.EMAIL_HOST,
@@ -26,14 +21,10 @@ export default async function SendOtp(email, otp, message = "") {
             html: `<p> Your OTP is ${otp}. <br /> ${message} <br /> If this was not you, please ignore this email. </p>`
         };
 
-        console.log("About to send mail");
-
         const info = await transporter.sendMail(mailOptions);
-        console.log("Email sent:", info.response);
-        console.log(`OTP sent to ${email}, OTP: ${otp}`);
+        logger.info("Email sent:", info.response);
         return info;
     } catch (error) {
-        console.log("Error sending OTP email:", error);
         throw new ApiError(500, "Failed to send OTP email. Please try again later.");
     }
 }

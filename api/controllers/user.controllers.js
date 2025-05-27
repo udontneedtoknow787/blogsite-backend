@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import OTP_Generator from "../utils/otp-generator.js";
 import SendOtp from "../utils/otp-sender.js";
 import bcrypt from "bcrypt";
+import logger from "../utils/logger.js";
 
 // for production
 export const cookieOptions = {
@@ -60,7 +61,7 @@ const registerUser = AsyncHandler(async (req, res) => {
             // If the user is not verified and created more than 10 days ago, delete the old unverified user and assign
             // that username to the new user
             await User.deleteOne({ _id: existingUser._id });
-            console.log("Deleted old unverified user with username:", username);
+            logger.info("Deleted old unverified user with username:", username);
         }
     }
     // if (existingUser && existingUser.email === email) {
@@ -79,7 +80,7 @@ const registerUser = AsyncHandler(async (req, res) => {
             // If the user is not verified and created more than 10 days ago, delete the old unverified user and assign
             // that email to the new user
             await User.deleteOne({ _id: existingEmail._id });
-            console.log("Deleted old unverified user with email:", email);
+            logger.info("Deleted old unverified user with email:", email);
         }
     }
     // OTP verification step
@@ -87,7 +88,7 @@ const registerUser = AsyncHandler(async (req, res) => {
     const hashedOtp = bcrypt.hashSync(otp, 10);
     // sending OTP to email
     const info = await SendOtp(email, otp);
-    console.log("SendOtp function response: ", info);
+    logger.info("SendOtp function response: ", info);
 
     const newUser = await User.create({ username, email, password, fullname, verificationCode: hashedOtp, verified: false, verificationCodeExpiry: Date.now() + 10 * 60 * 1000 });
     const createdUser = await User.findOne({
@@ -141,7 +142,7 @@ const userLogout = AsyncHandler(async (_, res) => {
 })
 
 const publicProfile = AsyncHandler(async (req, res) => {
-    console.log("Profile searched of ", req.params)
+    logger.info("Profile searched of ", req.params)
     const username = req.params?.username
     if (!z.string().min(2).max(20).safeParse(username).success) {
         throw new ApiError(400, "Invalid username")

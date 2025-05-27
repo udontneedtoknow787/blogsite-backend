@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import logger from "../utils/logger.js";
 
 const connectToDB = async () => {
     try {
@@ -6,10 +7,10 @@ const connectToDB = async () => {
             serverSelectionTimeoutMS: 10000
         })
         // console.log(connectionInstance.connection.host)
-        console.log("MongoDB connected successfully")
+        logger.info("MongoDB connected successfully")
         return connectionInstance;
     } catch (error) {
-        console.log(" Database connection Error.  " + error)
+        logger.error(" Database connection Error.  " + error)
         process.exit(1)
     }
 }

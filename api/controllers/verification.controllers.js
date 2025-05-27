@@ -9,6 +9,7 @@ import { z } from "zod";
 import OTP_Generator from "../utils/otp-generator.js";
 import SendOtp from "../utils/otp-sender.js";
 import { sendSimpleMessage } from "../utils/mailgun.js";
+import logger from "../utils/logger.js";
 
 
 const VerifyUser = AsyncHandler(async (req, res) => {
@@ -26,8 +27,8 @@ const VerifyUser = AsyncHandler(async (req, res) => {
     //     return res.status(200).json(new ApiResponse(200, {}, "User already verified. Please login."));
     // }
     if (user.verificationCodeExpiry === null || user.verificationCodeExpiry < Date.now()) {
-        console.log("verification limit time: ", user.verificationCodeExpiry);
-        console.log("current time: ", Date.now());
+        logger.silly("verification limit time: ", user.verificationCodeExpiry);
+        logger.silly("current time: ", Date.now());
         throw new ApiError(400, "OTP expired. Please request a new one.");
     }
     if (!bcrypt.compareSync(otp, user.verificationCode)) {
@@ -65,7 +66,7 @@ const RequestOTP = AsyncHandler(async (req, res) => {
     const hashedOtp = bcrypt.hashSync(otp, 10);
     // sending OTP to email
     const info = await SendOtp(email, otp);
-    console.log("SendOtp function response: ", info);
+    logger.info("SendOtp function response: ", info);
     await sendSimpleMessage( {otp, email, fullname:user.fullname, userId:user._id, message: "This is the second email!"} )
     user.verificationCode = hashedOtp;
     user.verificationCodeExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
