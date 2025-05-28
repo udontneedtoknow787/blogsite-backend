@@ -8,7 +8,7 @@ import { cookieOptions, generateAccessToken } from "./user.controllers.js";
 import { z } from "zod";
 import OTP_Generator from "../utils/otp-generator.js";
 import SendOtp from "../utils/otp-sender.js";
-import { sendSimpleMessage } from "../utils/mailgun.js";
+import { MailgunEmailService } from "../utils/mailgun.js";
 import logger from "../utils/logger.js";
 
 
@@ -19,7 +19,7 @@ const VerifyUser = AsyncHandler(async (req, res) => {
     if (mongoose.Types.ObjectId.isValid(userId) === false || otp.length !== 6) {
         throw new ApiError(400, "Invalid userId or OTP.");
     }
-    const user = await User.findById({_id: userId});
+    const user = await User.findById({ _id: userId });
     if (!user) {
         throw new ApiError(400, "User not found.");
     }
@@ -65,14 +65,15 @@ const RequestOTP = AsyncHandler(async (req, res) => {
     const otp = OTP_Generator(6);
     const hashedOtp = bcrypt.hashSync(otp, 10);
     // sending OTP to email
-    const info = await SendOtp(email, otp);
-    logger.info("SendOtp function response: ", info);
-    await sendSimpleMessage( {otp, email, fullname:user.fullname, userId:user._id, message: "This is the second email!"} )
+    // const info = await SendOtp(email, otp);
+    // logger.info("SendOtp function response: ", info);    //For testing purpose
+    await MailgunEmailService({ otp, email: user.email, fullname: user.fullname, userId: user._id, message: "This is the second email!" })
     user.verificationCode = hashedOtp;
     user.verificationCodeExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
     await user.save({ validateBeforeSave: false });
     return res.status(200).json(new ApiResponse(200, {}, "OTP sent to your email. Please check your inbox."));
 })
-export { VerifyUser,
+export {
+    VerifyUser,
     RequestOTP
- }
+}

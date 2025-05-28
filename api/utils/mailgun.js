@@ -1,7 +1,9 @@
 import FormData from "form-data"; // form-data v4.0.1
 import Mailgun from "mailgun.js"; // mailgun.js v11.1.0
+import logger from "./logger.js";
+import { ApiError } from "./apiError.js";
 
-export async function sendSimpleMessage({otp, email, fullname, userId, message = ""}) {
+export async function MailgunEmailService({otp, email, fullname, userId, message = ""}) {
   const mailgun = new Mailgun(FormData);
   const mg = mailgun.client({
     username: "api",
@@ -11,14 +13,18 @@ export async function sendSimpleMessage({otp, email, fullname, userId, message =
   });
   try {
     const data = await mg.messages.create("raj-kumar.me", {
-      from: "Mailgun Sandbox <postmaster@raj-kumar.me>",
-      to: ["Raj kumar <rajk.ug22.cs@nitp.ac.in>"],
+      from: "BlogSite <postmaster@raj-kumar.me>",
+      to: [`$<${email}>`], // <-- FIXED LINE
       subject: "BlogSite OTP Verification",
-      text:    `Congratulations ${fullname}, you just sent an email with Mailgun! You are truly awesome! This is your OTP: ${otp}
-        for userID: ${userId} ${message} If this was not you, please ignore this email. `,
+      text:    `Hi ${fullname}, Your One Time Password is : ${otp} for userID: ${userId} ${message} If this was not you, please ignore this email. `,
+      html:    `<p>Hi ${fullname},</p><p>Your One Time Password is : <strong>${otp}</strong> for userID: <strong>${userId}</strong> ${message}</p><p>If this was not you, please ignore this email.</p>`,
     });
 
-    console.log(data); // logs response data
+    logger.info(data); // logs response data
+    if(data.status!==200) {
+      logger.error(`Mailgun API error: ${data.message}`);
+      throw new ApiError(500, "Could not send mail at this moment!")
+    }
   } catch (error) {
     console.log(error); //logs any error
   }

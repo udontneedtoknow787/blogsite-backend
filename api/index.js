@@ -8,10 +8,10 @@ const PORT = process.env.PORT || 3000;
 connectToDB()
 .then(()=>{
     app.listen(PORT, '0.0.0.0', () => {
-        logger.info(`Server is running on port ${PORT}`);
+        console.log(`Server is running on port ${PORT}`);
     });
     // console.log(`Server is running on port ${PORT}`);
 })
-.catch((error) => { console.log(`Database connection Error.\n ${error}`) });
+.catch((error) => { logger.error(`Database connection Error.\n ${error}`) });
 
 export default app;

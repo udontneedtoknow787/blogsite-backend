@@ -9,6 +9,7 @@ import OTP_Generator from "../utils/otp-generator.js";
 import SendOtp from "../utils/otp-sender.js";
 import bcrypt from "bcrypt";
 import logger from "../utils/logger.js";
+import { MailgunEmailService } from "../utils/mailgun.js";
 
 // for production
 export const cookieOptions = {
@@ -61,7 +62,10 @@ const registerUser = AsyncHandler(async (req, res) => {
             // If the user is not verified and created more than 10 days ago, delete the old unverified user and assign
             // that username to the new user
             await User.deleteOne({ _id: existingUser._id });
-            logger.info("Deleted old unverified user with username:", username);
+            logger.warn("Deleted old unverified user with username:", username);
+        }
+        else {
+            throw new ApiError(400, "Username already taken. Please choose a different username. If you really want to use this username, please recheck after .");
         }
     }
     // if (existingUser && existingUser.email === email) {
@@ -80,20 +84,24 @@ const registerUser = AsyncHandler(async (req, res) => {
             // If the user is not verified and created more than 10 days ago, delete the old unverified user and assign
             // that email to the new user
             await User.deleteOne({ _id: existingEmail._id });
-            logger.info("Deleted old unverified user with email:", email);
+            logger.warn("Deleted old unverified user with email:", email);
+        }
+        else {
+            throw new ApiError(400, "Email already registered. Please use a different email address. If you own this email, please contact support.");
         }
     }
     // OTP verification step
     const otp = OTP_Generator(6);
     const hashedOtp = bcrypt.hashSync(otp, 10);
     // sending OTP to email
-    const info = await SendOtp(email, otp);
-    logger.info("SendOtp function response: ", info);
-
+    // const info = await SendOtp(email, otp);
+    // logger.info("SendOtp function response: ", info);    // For testing purpose
     const newUser = await User.create({ username, email, password, fullname, verificationCode: hashedOtp, verified: false, verificationCodeExpiry: Date.now() + 10 * 60 * 1000 });
+    
+    await MailgunEmailService({ otp, email, fullname, userId: newUser._id, message: "Please verify your email via OTP sent to this email address." })
     const createdUser = await User.findOne({
         _id: newUser._id
-    }).select("-password");
+    }).select("-password -verificationCode -verificationCodeExpiry");
     if (!createdUser) {
         throw new ApiError(500, "Failed to create user.");
     }
@@ -121,7 +129,7 @@ const userLogin = AsyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid credentials.");
     }
     const { accessToken } = await generateAccessToken(user._id)
-    const loggedInUser = await User.findById(user._id).select("-password")
+    const loggedInUser = await User.findById(user._id).select("-password -verificationCode -verificationCodeExpiry");
 
     // reverse the blogs field in user
     loggedInUser.blogs = loggedInUser.blogs.reverse()
@@ -147,7 +155,7 @@ const publicProfile = AsyncHandler(async (req, res) => {
     if (!z.string().min(2).max(20).safeParse(username).success) {
         throw new ApiError(400, "Invalid username")
     }
-    const user = await User.findOne({ username }).select("-password -email")
+    const user = await User.findOne({ username }).select("-password -email -verificationCode -verificationCodeExpiry")
     if (!user) {
         throw new ApiError(404, "User not found")
     }

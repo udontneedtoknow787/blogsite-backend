@@ -47,7 +47,7 @@ const postBlog = AsyncHandler(async(req, res) => {
     await saveBlog(createdBlog._id, userId)
 
     // After saving blog, also return updated user blogs list
-    const updatedUser = await User.findById(userId)
+    const updatedUser = await User.findById(userId).select("-password -verificationCode -verificationCodeExpiry")
     // const updatedBlogsList = await User.findById(userId).populate("blogs")
     
     return res

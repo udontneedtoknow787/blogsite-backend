@@ -7,7 +7,7 @@ import logger from "../utils/logger.js";
 export const authMiddleware = AsyncHandler(async (req, res, next)=> {
     try {
         // console.log("Request cookie : ",req.cookies.accessToken)
-        logger.info("Request cookie : its classiffied!")
+        console.log("Request cookie : its classiffied!")
         const token = req.cookies?.accessToken || req.headers["authorization"]?.replace("Bearer ", "") // figure out this portion
         if(!token){
             throw new ApiError(405, "Unauthorized request!\n Your login token might be expired.")
